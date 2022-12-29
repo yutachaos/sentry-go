@@ -51,9 +51,34 @@ func (h *handler) handle(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 		hub.Scope().SetRequest(ctx.Request())
 		ctx.Set(valuesKey, hub)
-		defer h.recoverWithSentry(hub, ctx.Request())
+		if isSentryEnabled(hub) {
+			defer h.recoverWithSentry(hub, ctx.Request())
+		}
 		return next(ctx)
 	}
+}
+
+func isSentryEnabled(hub *sentry.Hub) bool {
+	if hub == nil {
+		return false
+	}
+	client := hub.Client()
+	if client == nil {
+		return false
+	}
+
+	return client.Options().Dsn != ""
+
+	// // Or:
+	// transport := client.Transport
+	// switch transport.(type) {
+	// case *sentry.HTTPSyncTransport:
+	// 	return true
+	// case *sentry.HTTPTransport:
+	// 	return true
+	// default:
+	// 	return false
+	// }
 }
 
 func (h *handler) recoverWithSentry(hub *sentry.Hub, r *http.Request) {

@@ -138,6 +138,7 @@ func (hub *Hub) Client() *Client {
 }
 
 // PushScope pushes a new scope for the current Hub and reuses previously bound Client.
+// TODO: Could this method be no-op if Client is empty?
 func (hub *Hub) PushScope() *Scope {
 	top := hub.stackTop()
 
@@ -166,6 +167,7 @@ func (hub *Hub) PushScope() *Scope {
 //
 // Calls to PopScope that do not match previous calls to PushScope are silently
 // ignored.
+// TODO: Could this method be no-op if Client is empty?
 func (hub *Hub) PopScope() {
 	hub.mu.Lock()
 	defer hub.mu.Unlock()
@@ -352,6 +354,18 @@ func (hub *Hub) Flush(timeout time.Duration) bool {
 	}
 
 	return client.Flush(timeout)
+}
+
+// ...or IsActive?
+func (hub *Hub) IsEnabled() bool {
+	client := hub.Client()
+	if client == nil {
+		return false
+	}
+	if hub.Scope() == nil {
+		return false
+	}
+	return client.Options().Dsn != ""
 }
 
 // HasHubOnContext checks whether Hub instance is bound to a given Context struct.
