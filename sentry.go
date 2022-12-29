@@ -134,3 +134,8 @@ func LastEventID() EventID {
 	hub := CurrentHub()
 	return hub.LastEventID()
 }
+
+func IsEnabled() bool {
+	hub := CurrentHub()
+	return hub.IsEnabled()
+}

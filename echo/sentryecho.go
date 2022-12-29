@@ -45,40 +45,17 @@ func New(options Options) echo.MiddlewareFunc {
 
 func (h *handler) handle(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
-		hub := sentry.GetHubFromContext(ctx.Request().Context())
-		if hub == nil {
-			hub = sentry.CurrentHub().Clone()
-		}
-		hub.Scope().SetRequest(ctx.Request())
-		ctx.Set(valuesKey, hub)
-		if isSentryEnabled(hub) {
+		if sentry.IsEnabled() {
+			hub := sentry.GetHubFromContext(ctx.Request().Context())
+			if hub == nil {
+				hub = sentry.CurrentHub().Clone()
+			}
+			hub.Scope().SetRequest(ctx.Request())
+			ctx.Set(valuesKey, hub)
 			defer h.recoverWithSentry(hub, ctx.Request())
 		}
 		return next(ctx)
 	}
-}
-
-func isSentryEnabled(hub *sentry.Hub) bool {
-	if hub == nil {
-		return false
-	}
-	client := hub.Client()
-	if client == nil {
-		return false
-	}
-
-	return client.Options().Dsn != ""
-
-	// // Or:
-	// transport := client.Transport
-	// switch transport.(type) {
-	// case *sentry.HTTPSyncTransport:
-	// 	return true
-	// case *sentry.HTTPTransport:
-	// 	return true
-	// default:
-	// 	return false
-	// }
 }
 
 func (h *handler) recoverWithSentry(hub *sentry.Hub, r *http.Request) {
